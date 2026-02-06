@@ -1,5 +1,6 @@
 import UIKit
 
+@available(iOS 26, *)
 @MainActor
 final class AnnotationInputView: UIView {
 	var onSave: ((String) -> Void)?

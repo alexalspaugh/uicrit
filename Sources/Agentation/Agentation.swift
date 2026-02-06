@@ -1,5 +1,6 @@
 import UIKit
 
+@available(iOS 26, *)
 @MainActor
 public final class Agentation {
 

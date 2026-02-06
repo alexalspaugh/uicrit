@@ -4,7 +4,7 @@ Debug tool for UIKit apps. Tap or drag-to-select elements in a running app, anno
 
 ## Requirements
 
-- iOS 26+
+- iOS 16+ deployment target (activates only on iOS 26+)
 - UIKit
 - Zero dependencies
 
@@ -24,7 +24,9 @@ In your `AppDelegate` (or wherever you bootstrap):
 #if DEBUG
 import Agentation
 
-Agentation.install(activationNotification: .deviceDidShake)
+if #available(iOS 26, *) {
+    Agentation.install(activationNotification: .deviceDidShake)
+}
 #endif
 ```
 

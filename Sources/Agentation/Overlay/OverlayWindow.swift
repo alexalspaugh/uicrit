@@ -1,5 +1,6 @@
 import UIKit
 
+@available(iOS 26, *)
 @MainActor
 final class OverlayWindow: UIWindow {
 	init(scene: UIWindowScene) {

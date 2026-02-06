@@ -1,5 +1,6 @@
 import UIKit
 
+@available(iOS 26, *)
 @MainActor
 final class ToolbarView: UIView {
 	var onAnnotate: (() -> Void)?

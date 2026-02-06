@@ -1,5 +1,6 @@
 import UIKit
 
+@available(iOS 26, *)
 @MainActor
 final class OverlayViewController: UIViewController {
 	private let session: Session
