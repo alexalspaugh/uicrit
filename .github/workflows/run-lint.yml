@@ -1,0 +1,19 @@
+name: Swift Format
+
+on:
+  pull_request:
+    paths:
+      - "**/*.swift"
+      - "!**/*.xcodeproj/**"
+      - "!**/*.xcworkspace/**"
+
+jobs:
+  SwiftLint:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Lint
+        shell: zsh {0}
+        timeout-minutes: 10
+        run: xcrun swift-format lint -sr .
