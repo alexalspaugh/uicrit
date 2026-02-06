@@ -5,6 +5,13 @@ import UIKit
 final class ToolbarView: UIView {
 	var onAnnotate: (() -> Void)?
 	var onDone: (() -> Void)?
+	var onConfirm: (() -> Void)?
+	var onRedo: (() -> Void)?
+
+	enum Mode {
+		case defaultMode
+		case confirmArea
+	}
 
 	private let glassEffectView: UIVisualEffectView = {
 		let effectView = UIVisualEffectView(effect: UIGlassEffect())
@@ -32,6 +39,18 @@ final class ToolbarView: UIView {
 	private lazy var doneButton: UIButton = {
 		let button = ToolbarView.makeIconButton(systemName: "xmark.circle.fill")
 		button.addAction(UIAction { [weak self] _ in self?.onDone?() }, for: .touchUpInside)
+		return button
+	}()
+
+	private lazy var confirmButton: UIButton = {
+		let button = ToolbarView.makeIconButton(systemName: "checkmark.circle.fill")
+		button.addAction(UIAction { [weak self] _ in self?.onConfirm?() }, for: .touchUpInside)
+		return button
+	}()
+
+	private lazy var redoButton: UIButton = {
+		let button = ToolbarView.makeIconButton(systemName: "arrow.counterclockwise.circle")
+		button.addAction(UIAction { [weak self] _ in self?.onRedo?() }, for: .touchUpInside)
 		return button
 	}()
 
@@ -63,6 +82,18 @@ final class ToolbarView: UIView {
 	@available(*, unavailable)
 	required init?(coder: NSCoder) {
 		fatalError("init(coder:) has not been implemented")
+	}
+
+	func setMode(_ mode: Mode) {
+		stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+		switch mode {
+		case .defaultMode:
+			stackView.addArrangedSubview(annotateButton)
+			stackView.addArrangedSubview(doneButton)
+		case .confirmArea:
+			stackView.addArrangedSubview(redoButton)
+			stackView.addArrangedSubview(confirmButton)
+		}
 	}
 
 	private static func makeIconButton(systemName: String) -> UIButton {

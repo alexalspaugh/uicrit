@@ -11,6 +11,20 @@ final class OverlayViewController: UIViewController {
 	private var selectionRectangleView: SelectionRectangleView?
 	private var dragStartPoint: CGPoint?
 	private var annotationBottomConstraint: NSLayoutConstraint?
+	private var panGesture: UIPanGestureRecognizer?
+	private var tapGesture: UITapGestureRecognizer?
+
+	private enum OverlayState {
+		case idle
+		case areaSelected
+		case noting
+	}
+
+	private var overlayState: OverlayState = .idle
+	private var selectedAreaRect: CGRect?
+	private var capturedFullScreenData: Data?
+	private var capturedAreaData: Data?
+	private var capturedAreaRecords: [ElementRecord] = []
 
 	init(session: Session) {
 		self.session = session
@@ -33,6 +47,8 @@ final class OverlayViewController: UIViewController {
 		tapGesture.require(toFail: panGesture)
 		view.addGestureRecognizer(tapGesture)
 		view.addGestureRecognizer(panGesture)
+		self.tapGesture = tapGesture
+		self.panGesture = panGesture
 
 		view.addSubview(toolbarView)
 		NSLayoutConstraint.activate([
@@ -55,6 +71,12 @@ final class OverlayViewController: UIViewController {
 		}
 		toolbarView.onDone = {
 			Agentation.deactivate()
+		}
+		toolbarView.onConfirm = { [weak self] in
+			self?.confirmArea()
+		}
+		toolbarView.onRedo = { [weak self] in
+			self?.redoAreaSelection()
 		}
 
 		annotationInputView.onSave = { [weak self] text in
@@ -107,24 +129,17 @@ final class OverlayViewController: UIViewController {
 				width: abs(currentPoint.x - startPoint.x),
 				height: abs(currentPoint.y - startPoint.y)
 			)
-			selectionRectangleView?.removeFromSuperview()
-			selectionRectangleView = nil
 			dragStartPoint = nil
 
-			guard rect.width > 10, rect.height > 10 else { return }
-
-			let windowRect = view.convert(rect, to: nil)
-			let appViews = findAppViews(in: windowRect)
-			guard !appViews.isEmpty else { return }
-
-			clearHighlights()
-			selectedViews = appViews
-
-			for appView in appViews {
-				let record = MetadataCapture.captureMetadata(for: appView)
-				session.addRecord(record)
-				addHighlight(for: appView, record: record)
+			guard rect.width > 10, rect.height > 10 else {
+				selectionRectangleView?.removeFromSuperview()
+				selectionRectangleView = nil
+				return
 			}
+
+			selectionRectangleView?.frame = rect
+			selectedAreaRect = rect
+			enterAreaSelectedState()
 
 		case .cancelled, .failed:
 			selectionRectangleView?.removeFromSuperview()
@@ -222,12 +237,69 @@ final class OverlayViewController: UIViewController {
 	}
 
 	private func saveAnnotation(_ text: String) {
+		if overlayState == .noting {
+			performAreaExport(note: text)
+			return
+		}
 		for selectedView in selectedViews {
 			session.annotate(view: selectedView, text: text)
 		}
 		annotationInputView.hide()
 		toolbarView.isHidden = false
 		performExport()
+	}
+
+	// MARK: - Area Selection
+
+	private func enterAreaSelectedState() {
+		overlayState = .areaSelected
+		panGesture?.isEnabled = false
+		tapGesture?.isEnabled = false
+		clearHighlights()
+		toolbarView.setMode(.confirmArea)
+		toolbarView.isHidden = false
+	}
+
+	private func confirmArea() {
+		guard let areaRect = selectedAreaRect else { return }
+
+		let appWindows = UIApplication.shared.connectedScenes
+			.compactMap { $0 as? UIWindowScene }
+			.flatMap(\.windows)
+			.filter { !($0 is OverlayWindow) }
+			.sorted { $0.windowLevel.rawValue > $1.windowLevel.rawValue }
+
+		let windowRect = view.convert(areaRect, to: nil)
+
+		if let appWindow = appWindows.first {
+			capturedFullScreenData = ScreenshotCapture.captureFullScreen(window: appWindow)
+			capturedAreaData = ScreenshotCapture.captureRect(windowRect, in: appWindow)
+		}
+
+		let appViews = findAppViews(in: windowRect)
+		capturedAreaRecords = appViews.map { MetadataCapture.captureMetadata(for: $0) }
+
+		enterNotingState()
+	}
+
+	private func enterNotingState() {
+		overlayState = .noting
+		toolbarView.isHidden = true
+		annotationInputView.show()
+	}
+
+	private func redoAreaSelection() {
+		selectionRectangleView?.removeFromSuperview()
+		selectionRectangleView = nil
+		selectedAreaRect = nil
+		capturedFullScreenData = nil
+		capturedAreaData = nil
+		capturedAreaRecords = []
+
+		overlayState = .idle
+		panGesture?.isEnabled = true
+		tapGesture?.isEnabled = true
+		toolbarView.setMode(.defaultMode)
 	}
 
 	// MARK: - Export
@@ -246,5 +318,75 @@ final class OverlayViewController: UIViewController {
 				print("[Agentation] ========================================")
 			}
 		}
+	}
+
+	private func performAreaExport(note: String) {
+		annotationInputView.hide()
+
+		let exportDir = FileManager.default.temporaryDirectory
+			.appendingPathComponent("Agentation", isDirectory: true)
+		try? FileManager.default.removeItem(at: exportDir)
+		try? FileManager.default.createDirectory(at: exportDir, withIntermediateDirectories: true)
+
+		if let data = capturedFullScreenData {
+			try? data.write(to: exportDir.appendingPathComponent("fullscreen.jpg"))
+		}
+		if let data = capturedAreaData {
+			try? data.write(to: exportDir.appendingPathComponent("area.jpg"))
+		}
+
+		let formatter = ISO8601DateFormatter()
+		let areaRect = selectedAreaRect ?? .zero
+		let windowRect = view.convert(areaRect, to: nil)
+		let elements = capturedAreaRecords.map { record in
+			ExportElement(
+				id: record.id,
+				className: record.className,
+				accessibilityIdentifier: record.accessibilityIdentifier,
+				propertyName: record.propertyName,
+				viewControllerName: record.viewControllerName,
+				frame: ExportFrame(
+					x: record.frameInWindow.origin.x,
+					y: record.frameInWindow.origin.y,
+					width: record.frameInWindow.size.width,
+					height: record.frameInWindow.size.height
+				),
+				annotation: nil,
+				screenshotFilename: nil
+			)
+		}
+
+		let payload = AreaExportPayload(
+			schemaVersion: "1.0.0",
+			timestamp: formatter.string(from: Date()),
+			note: note,
+			selectedArea: ExportFrame(
+				x: windowRect.origin.x, y: windowRect.origin.y,
+				width: windowRect.size.width, height: windowRect.size.height
+			),
+			fullScreenFilename: "fullscreen.jpg",
+			areaFilename: "area.jpg",
+			elements: elements
+		)
+
+		let jsonURL = exportDir.appendingPathComponent("export.json")
+		let markdownURL = exportDir.appendingPathComponent("export.md")
+
+		do {
+			let encoder = JSONEncoder()
+			encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+			let jsonData = try encoder.encode(payload)
+			try jsonData.write(to: jsonURL)
+			let markdown = AreaMarkdownExporter.export(payload: payload)
+			try markdown.write(to: markdownURL, atomically: true, encoding: .utf8)
+			print("[Agentation] ========================================")
+			print("[Agentation] Area Export Complete")
+			print("[Agentation] Export directory: \(exportDir.path)")
+			print("[Agentation] ========================================")
+		} catch {
+			print("[Agentation] Export failed: \(error)")
+		}
+
+		Agentation.deactivate()
 	}
 }

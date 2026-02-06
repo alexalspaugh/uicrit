@@ -21,6 +21,23 @@ enum ScreenshotCapture {
 		return image.jpegData(compressionQuality: quality)
 	}
 
+	static func captureRect(_ rect: CGRect, in window: UIWindow, scale: CGFloat = 2, quality: CGFloat = 0.6) -> Data? {
+		let screenBounds = window.bounds
+		let cropRect = rect.intersection(screenBounds)
+		guard !cropRect.isEmpty else { return nil }
+
+		let clampedScale = min(scale, 2)
+		let format = UIGraphicsImageRendererFormat()
+		format.scale = clampedScale
+		let renderer = UIGraphicsImageRenderer(bounds: cropRect, format: format)
+
+		let image = renderer.image { context in
+			window.drawHierarchy(in: window.bounds.offsetBy(dx: -cropRect.origin.x, dy: -cropRect.origin.y), afterScreenUpdates: false)
+		}
+
+		return image.jpegData(compressionQuality: quality)
+	}
+
 	static func captureFullScreen(window: UIWindow, scale: CGFloat = 2, quality: CGFloat = 0.6) -> Data? {
 		let clampedScale = min(scale, 2)
 		let format = UIGraphicsImageRendererFormat()
