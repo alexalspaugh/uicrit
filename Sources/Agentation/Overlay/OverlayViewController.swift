@@ -52,9 +52,6 @@ final class OverlayViewController: UIViewController {
 		toolbarView.onAnnotate = { [weak self] in
 			self?.showAnnotationInput()
 		}
-		toolbarView.onExport = { [weak self] in
-			self?.performExport()
-		}
 		toolbarView.onDone = {
 			Agentation.deactivate()
 		}
@@ -229,6 +226,7 @@ final class OverlayViewController: UIViewController {
 		}
 		annotationInputView.hide()
 		toolbarView.isHidden = false
+		performExport()
 	}
 
 	// MARK: - Export
@@ -238,8 +236,13 @@ final class OverlayViewController: UIViewController {
 		Task { [weak self] in
 			guard let session = self?.session else { return }
 			if let result = await coordinator.export(session: session) {
-				print("[Agentation] Export complete: \(result.directoryURL.path)")
-				print("[Agentation] Markdown copied to clipboard")
+				print("[Agentation] ========================================")
+				print("[Agentation] Export Complete")
+				print("[Agentation] ========================================")
+				print(result.markdownString)
+				print("[Agentation] ========================================")
+				print("[Agentation] Export directory: \(result.directoryURL.path)")
+				print("[Agentation] ========================================")
 			}
 		}
 	}

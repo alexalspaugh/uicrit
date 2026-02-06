@@ -3,7 +3,6 @@ import UIKit
 @MainActor
 final class ToolbarView: UIView {
 	var onAnnotate: (() -> Void)?
-	var onExport: (() -> Void)?
 	var onDone: (() -> Void)?
 
 	private let glassEffectView: UIVisualEffectView = {
@@ -29,12 +28,6 @@ final class ToolbarView: UIView {
 		return button
 	}()
 
-	private lazy var exportButton: UIButton = {
-		let button = ToolbarView.makeIconButton(systemName: "square.and.arrow.up")
-		button.addAction(UIAction { [weak self] _ in self?.onExport?() }, for: .touchUpInside)
-		return button
-	}()
-
 	private lazy var doneButton: UIButton = {
 		let button = ToolbarView.makeIconButton(systemName: "xmark.circle.fill")
 		button.addAction(UIAction { [weak self] _ in self?.onDone?() }, for: .touchUpInside)
@@ -50,7 +43,6 @@ final class ToolbarView: UIView {
 		glassEffectView.contentView.addSubview(stackView)
 
 		stackView.addArrangedSubview(annotateButton)
-		stackView.addArrangedSubview(exportButton)
 		stackView.addArrangedSubview(doneButton)
 
 		NSLayoutConstraint.activate([

@@ -69,8 +69,6 @@ final class ExportCoordinator {
 			return nil
 		}
 
-		UIPasteboard.general.string = markdownString
-
 		return ExportResult(
 			directoryURL: exportDir,
 			jsonURL: jsonURL,
