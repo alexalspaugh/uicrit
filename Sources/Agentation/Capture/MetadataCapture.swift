@@ -12,6 +12,8 @@ enum MetadataCapture {
 			propertyName: propertyName,
 			frameInWindow: view.agFrameInWindow ?? .zero,
 			viewControllerName: viewController.map { String(describing: type(of: $0)) },
+			cellClassName: view.agContainingCellClassName,
+			visualProperties: view.agVisualProperties,
 			annotation: nil,
 			capturedAt: Date()
 		)
@@ -40,6 +42,19 @@ enum MetadataCapture {
 					return label
 				}
 			}
+		}
+		var current: UIView? = view.superview
+		while let ancestor = current {
+			if ancestor is UICollectionViewCell || ancestor is UITableViewCell {
+				let mirror = Mirror(reflecting: ancestor)
+				for case (let label?, let value) in mirror.children {
+					if let cellView = value as? UIView, cellView === view {
+						return label
+					}
+				}
+				break
+			}
+			current = ancestor.superview
 		}
 		return nil
 	}

@@ -228,6 +228,17 @@ final class OverlayViewController: UIViewController {
 		}
 	}
 
+	private func filterOversizedViews(_ views: [UIView], selectionRect: CGRect) -> [UIView] {
+		let selectionArea = selectionRect.width * selectionRect.height
+		guard selectionArea > 0 else { return views }
+		return views.filter { view in
+			guard let frameInWindow = view.agFrameInWindow else { return true }
+			let containsSelection = frameInWindow.contains(selectionRect)
+			let viewArea = frameInWindow.width * frameInWindow.height
+			return !(containsSelection && viewArea > selectionArea * 4)
+		}
+	}
+
 	// MARK: - Annotation
 
 	private func showAnnotationInput() {
@@ -271,13 +282,19 @@ final class OverlayViewController: UIViewController {
 
 		let windowRect = view.convert(areaRect, to: nil)
 
+		let overlayWindow = view.window
+		overlayWindow?.isHidden = true
+
 		if let appWindow = appWindows.first {
 			capturedFullScreenData = ScreenshotCapture.captureFullScreen(window: appWindow)
 			capturedAreaData = ScreenshotCapture.captureRect(windowRect, in: appWindow)
 		}
 
+		overlayWindow?.isHidden = false
+
 		let appViews = findAppViews(in: windowRect)
-		capturedAreaRecords = appViews.map { MetadataCapture.captureMetadata(for: $0) }
+		let filteredViews = filterOversizedViews(appViews, selectionRect: windowRect)
+		capturedAreaRecords = filteredViews.map { MetadataCapture.captureMetadata(for: $0) }
 
 		enterNotingState()
 	}
@@ -323,10 +340,15 @@ final class OverlayViewController: UIViewController {
 	private func performAreaExport(note: String) {
 		annotationInputView.hide()
 
-		let exportDir = FileManager.default.temporaryDirectory
-			.appendingPathComponent("Agentation", isDirectory: true)
-		try? FileManager.default.removeItem(at: exportDir)
-		try? FileManager.default.createDirectory(at: exportDir, withIntermediateDirectories: true)
+		let baseDir = URL(fileURLWithPath: "/tmp/Agentation", isDirectory: true)
+		let dateFormatter = DateFormatter()
+		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss"
+		let timestampDir = baseDir.appendingPathComponent(dateFormatter.string(from: Date()), isDirectory: true)
+		try? FileManager.default.createDirectory(at: timestampDir, withIntermediateDirectories: true)
+		let latestLink = baseDir.appendingPathComponent("latest")
+		try? FileManager.default.removeItem(at: latestLink)
+		try? FileManager.default.createSymbolicLink(at: latestLink, withDestinationURL: timestampDir)
+		let exportDir = timestampDir
 
 		if let data = capturedFullScreenData {
 			try? data.write(to: exportDir.appendingPathComponent("fullscreen.jpg"))
@@ -345,6 +367,8 @@ final class OverlayViewController: UIViewController {
 				accessibilityIdentifier: record.accessibilityIdentifier,
 				propertyName: record.propertyName,
 				viewControllerName: record.viewControllerName,
+				cellClassName: record.cellClassName,
+				visualProperties: ExportVisualProperties(from: record.visualProperties),
 				frame: ExportFrame(
 					x: record.frameInWindow.origin.x,
 					y: record.frameInWindow.origin.y,
@@ -357,7 +381,7 @@ final class OverlayViewController: UIViewController {
 		}
 
 		let payload = AreaExportPayload(
-			schemaVersion: "1.0.0",
+			schemaVersion: "1.1.0",
 			timestamp: formatter.string(from: Date()),
 			note: note,
 			selectedArea: ExportFrame(

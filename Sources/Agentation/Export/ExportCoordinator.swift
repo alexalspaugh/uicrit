@@ -13,9 +13,15 @@ final class ExportCoordinator {
 	func export(session: Session) async -> ExportResult? {
 		let records = session.records
 
-		let exportDir = FileManager.default.temporaryDirectory.appendingPathComponent("Agentation", isDirectory: true)
-		try? FileManager.default.removeItem(at: exportDir)
-		try? FileManager.default.createDirectory(at: exportDir, withIntermediateDirectories: true)
+		let baseDir = URL(fileURLWithPath: "/tmp/Agentation", isDirectory: true)
+		let formatter = DateFormatter()
+		formatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss"
+		let timestampDir = baseDir.appendingPathComponent(formatter.string(from: Date()), isDirectory: true)
+		try? FileManager.default.createDirectory(at: timestampDir, withIntermediateDirectories: true)
+		let latestLink = baseDir.appendingPathComponent("latest")
+		try? FileManager.default.removeItem(at: latestLink)
+		try? FileManager.default.createSymbolicLink(at: latestLink, withDestinationURL: timestampDir)
+		let exportDir = timestampDir
 
 		var screenshotURLs: [URL] = []
 		var elements: [ExportElement] = []
@@ -37,6 +43,8 @@ final class ExportCoordinator {
 				accessibilityIdentifier: record.accessibilityIdentifier,
 				propertyName: record.propertyName,
 				viewControllerName: record.viewControllerName,
+				cellClassName: record.cellClassName,
+				visualProperties: ExportVisualProperties(from: record.visualProperties),
 				frame: ExportFrame(
 					x: record.frameInWindow.origin.x,
 					y: record.frameInWindow.origin.y,
@@ -49,10 +57,10 @@ final class ExportCoordinator {
 			elements.append(element)
 		}
 
-		let formatter = ISO8601DateFormatter()
+		let isoFormatter = ISO8601DateFormatter()
 		let payload = ExportPayload(
-			schemaVersion: "1.0.0",
-			timestamp: formatter.string(from: Date()),
+			schemaVersion: "1.1.0",
+			timestamp: isoFormatter.string(from: Date()),
 			elements: elements
 		)
 
