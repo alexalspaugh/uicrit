@@ -21,7 +21,7 @@ extension UIView {
 		if let label = self as? UILabel {
 			text = label.text
 			fontSize = label.font?.pointSize
-			textColor = label.textColor?.agHexString
+			textColor = label.textColor.agHexString
 		} else if let textField = self as? UITextField {
 			text = textField.text
 			fontSize = textField.font?.pointSize
@@ -33,7 +33,7 @@ extension UIView {
 		} else if let button = self as? UIButton {
 			text = button.currentTitle
 			fontSize = button.titleLabel?.font?.pointSize
-			textColor = button.currentTitleColor?.agHexString
+			textColor = button.currentTitleColor.agHexString
 		} else if let imageView = self as? UIImageView {
 			imageName = imageView.image?.accessibilityIdentifier
 		}
