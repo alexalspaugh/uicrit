@@ -15,7 +15,7 @@ enum ScreenshotCapture {
 		let renderer = UIGraphicsImageRenderer(bounds: cropRect, format: format)
 
 		let image = renderer.image { context in
-			window.drawHierarchy(in: window.bounds.offsetBy(dx: -cropRect.origin.x, dy: -cropRect.origin.y), afterScreenUpdates: true)
+			window.layer.render(in: context.cgContext)
 		}
 
 		return image.jpegData(compressionQuality: quality)
@@ -32,7 +32,7 @@ enum ScreenshotCapture {
 		let renderer = UIGraphicsImageRenderer(bounds: cropRect, format: format)
 
 		let image = renderer.image { context in
-			window.drawHierarchy(in: window.bounds.offsetBy(dx: -cropRect.origin.x, dy: -cropRect.origin.y), afterScreenUpdates: true)
+			window.layer.render(in: context.cgContext)
 		}
 
 		return image.jpegData(compressionQuality: quality)
@@ -45,7 +45,7 @@ enum ScreenshotCapture {
 		let renderer = UIGraphicsImageRenderer(bounds: window.bounds, format: format)
 
 		let image = renderer.image { context in
-			window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+			window.layer.render(in: context.cgContext)
 		}
 
 		return image.jpegData(compressionQuality: quality)
