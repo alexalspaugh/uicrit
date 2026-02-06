@@ -4,6 +4,12 @@ import UIKit
 final class AnnotationInputView: UIView {
 	var onSave: ((String) -> Void)?
 
+	private let glassEffectView: UIVisualEffectView = {
+		let effectView = UIVisualEffectView(effect: UIGlassEffect())
+		effectView.translatesAutoresizingMaskIntoConstraints = false
+		return effectView
+	}()
+
 	private let textField: UITextField = {
 		let field = UITextField()
 		field.placeholder = "Add annotation..."
@@ -15,11 +21,10 @@ final class AnnotationInputView: UIView {
 	}()
 
 	private let saveButton: UIButton = {
-		var config = UIButton.Configuration.filled()
-		config.title = "Save"
-		config.baseBackgroundColor = .systemBlue
-		config.baseForegroundColor = .white
-		config.cornerStyle = .medium
+		var config = UIButton.Configuration.plain()
+		let symbolConfig = UIImage.SymbolConfiguration(pointSize: 22, weight: .medium)
+		config.image = UIImage(systemName: "arrow.up.circle.fill", withConfiguration: symbolConfig)
+		config.baseForegroundColor = .systemBlue
 		let button = UIButton(configuration: config)
 		button.translatesAutoresizingMaskIntoConstraints = false
 		return button
@@ -29,23 +34,31 @@ final class AnnotationInputView: UIView {
 
 	override init(frame: CGRect) {
 		super.init(frame: frame)
-		backgroundColor = UIColor.systemBackground.withAlphaComponent(0.95)
+		backgroundColor = .clear
 		translatesAutoresizingMaskIntoConstraints = false
 		isHidden = true
+
+		addSubview(glassEffectView)
+		NSLayoutConstraint.activate([
+			glassEffectView.topAnchor.constraint(equalTo: topAnchor),
+			glassEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
+			glassEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
+			glassEffectView.bottomAnchor.constraint(equalTo: bottomAnchor),
+		])
 
 		let stack = UIStackView(arrangedSubviews: [textField, saveButton])
 		stack.axis = .horizontal
 		stack.spacing = 8
 		stack.translatesAutoresizingMaskIntoConstraints = false
-		addSubview(stack)
+		glassEffectView.contentView.addSubview(stack)
 
 		NSLayoutConstraint.activate([
-			stack.topAnchor.constraint(equalTo: topAnchor, constant: 8),
-			stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-			stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+			stack.topAnchor.constraint(equalTo: glassEffectView.contentView.topAnchor, constant: 8),
+			stack.leadingAnchor.constraint(equalTo: glassEffectView.contentView.leadingAnchor, constant: 16),
+			stack.trailingAnchor.constraint(equalTo: glassEffectView.contentView.trailingAnchor, constant: -16),
 			stack.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -8),
 			stack.heightAnchor.constraint(equalToConstant: 44),
-			saveButton.widthAnchor.constraint(equalToConstant: 60),
+			saveButton.widthAnchor.constraint(equalToConstant: 44),
 		])
 
 		saveButton.addAction(UIAction { [weak self] _ in self?.handleSave() }, for: .touchUpInside)

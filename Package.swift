@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
 	name: "Agentation",
 	platforms: [
-		.iOS(.v17)
+		.iOS(.v26)
 	],
 	products: [
 		.library(
