@@ -59,6 +59,20 @@ extension UIView {
 	}
 }
 
+extension UIView {
+	var agHasVisualStyling: Bool {
+		if let bg = backgroundColor {
+			var a: CGFloat = 0
+			bg.getRed(nil, green: nil, blue: nil, alpha: &a)
+			if a > 0 { return true }
+		}
+		if layer.cornerRadius > 0 { return true }
+		if layer.borderWidth > 0 { return true }
+		if layer.shadowOpacity > 0 { return true }
+		return false
+	}
+}
+
 extension UIView.ContentMode {
 	var agName: String {
 		switch self {

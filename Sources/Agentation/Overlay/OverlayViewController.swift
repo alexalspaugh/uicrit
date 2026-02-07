@@ -285,6 +285,7 @@ final class OverlayViewController: UIViewController {
 		let frameInWindow = view.window?.convert(viewFrame, to: nil) ?? viewFrame
 		guard frameInWindow.intersects(rect) else { return }
 
+		let parentIndex = results.count
 		var childIntersected = false
 		for child in view.subviews where !child.isHidden && child.alpha > 0 {
 			let before = results.count
@@ -294,8 +295,8 @@ final class OverlayViewController: UIViewController {
 			}
 		}
 
-		if !childIntersected {
-			results.append(view)
+		if !childIntersected || view.agHasVisualStyling {
+			results.insert(view, at: parentIndex)
 		}
 	}
 
