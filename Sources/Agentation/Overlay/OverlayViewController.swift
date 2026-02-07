@@ -286,11 +286,12 @@ final class OverlayViewController: UIViewController {
 		overlayWindow?.isHidden = true
 
 		if let appWindow = appWindows.first {
+			appWindow.makeKey()
 			capturedFullScreenData = ScreenshotCapture.captureFullScreen(window: appWindow)
 			capturedAreaData = ScreenshotCapture.captureRect(windowRect, in: appWindow)
 		}
 
-		overlayWindow?.isHidden = false
+		overlayWindow?.makeKeyAndVisible()
 
 		let appViews = findAppViews(in: windowRect)
 		let filteredViews = filterOversizedViews(appViews, selectionRect: windowRect)

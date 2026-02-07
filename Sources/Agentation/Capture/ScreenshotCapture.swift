@@ -14,8 +14,8 @@ enum ScreenshotCapture {
 		format.scale = clampedScale
 		let renderer = UIGraphicsImageRenderer(bounds: cropRect, format: format)
 
-		let image = renderer.image { context in
-			window.layer.render(in: context.cgContext)
+		let image = renderer.image { _ in
+			window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
 		}
 
 		return image.jpegData(compressionQuality: quality)
@@ -31,8 +31,8 @@ enum ScreenshotCapture {
 		format.scale = clampedScale
 		let renderer = UIGraphicsImageRenderer(bounds: cropRect, format: format)
 
-		let image = renderer.image { context in
-			window.layer.render(in: context.cgContext)
+		let image = renderer.image { _ in
+			window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
 		}
 
 		return image.jpegData(compressionQuality: quality)
@@ -44,8 +44,8 @@ enum ScreenshotCapture {
 		format.scale = clampedScale
 		let renderer = UIGraphicsImageRenderer(bounds: window.bounds, format: format)
 
-		let image = renderer.image { context in
-			window.layer.render(in: context.cgContext)
+		let image = renderer.image { _ in
+			window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
 		}
 
 		return image.jpegData(compressionQuality: quality)
