@@ -274,30 +274,36 @@ final class OverlayViewController: UIViewController {
 	private func confirmArea() {
 		guard let areaRect = selectedAreaRect else { return }
 
-		let appWindows = UIApplication.shared.connectedScenes
-			.compactMap { $0 as? UIWindowScene }
-			.flatMap(\.windows)
-			.filter { !($0 is OverlayWindow) }
-			.sorted { $0.windowLevel.rawValue > $1.windowLevel.rawValue }
-
 		let windowRect = view.convert(areaRect, to: nil)
 
-		let overlayWindow = view.window
-		overlayWindow?.isHidden = true
-
-		if let appWindow = appWindows.first {
-			appWindow.makeKey()
-			capturedFullScreenData = ScreenshotCapture.captureFullScreen(window: appWindow)
-			capturedAreaData = ScreenshotCapture.captureRect(windowRect, in: appWindow)
-		}
-
-		overlayWindow?.makeKeyAndVisible()
-
+		// Capture metadata while overlay is still visible (no dependency on overlay state)
 		let appViews = findAppViews(in: windowRect)
 		let filteredViews = filterOversizedViews(appViews, selectionRect: windowRect)
 		capturedAreaRecords = filteredViews.map { MetadataCapture.captureMetadata(for: $0) }
 
-		enterNotingState()
+		// Find the app's content window (skip system windows like UITextEffectsWindow)
+		let appWindow = UIApplication.shared.connectedScenes
+			.compactMap { $0 as? UIWindowScene }
+			.flatMap(\.windows)
+			.first { !($0 is OverlayWindow) && $0.windowLevel == .normal }
+
+		let overlayWindow = view.window
+		overlayWindow?.isHidden = true
+
+		if let appWindow {
+			appWindow.makeKey()
+			CATransaction.flush()
+
+			DispatchQueue.main.async { [weak self] in
+				self?.capturedFullScreenData = ScreenshotCapture.captureFullScreen(window: appWindow)
+				self?.capturedAreaData = ScreenshotCapture.captureRect(windowRect, in: appWindow)
+				overlayWindow?.makeKeyAndVisible()
+				self?.enterNotingState()
+			}
+		} else {
+			overlayWindow?.makeKeyAndVisible()
+			enterNotingState()
+		}
 	}
 
 	private func enterNotingState() {
