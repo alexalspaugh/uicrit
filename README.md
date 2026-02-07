@@ -57,19 +57,31 @@ When activated:
 
 1. A glass toolbar appears at the bottom with two buttons — **Annotate** and **Done**
 2. **Tap** any element to select it and see its metadata (class name, property name, view controller, accessibility ID, frame)
-3. **Drag** to draw a selection rectangle and select multiple elements at once
-4. **Annotate** selected elements with notes describing what you want changed — saving an annotation automatically exports metadata, screenshots, and a markdown summary to the Xcode console
-5. **Done** dismisses the overlay
+3. **Drag** to draw a selection rectangle and capture multiple elements at once — reposition by dragging, resize with corner handles
+4. **Annotate** with a note describing what you want changed — saving exports metadata, screenshots, and a markdown summary
+5. The export directory path prints to the Xcode console
+6. **Done** dismisses the overlay
 
 ## Export Output
 
-Export writes to a temp directory (`FileManager.temporaryDirectory/Agentation/`):
+Exports write to `/tmp/Agentation/<timestamp>/` with a symlink at `/tmp/Agentation/latest/`.
+
+**Single-element export** (tap + annotate):
 
 | File | Contents |
 |---|---|
-| `export.json` | Structured metadata — element class names, property names, frames, view controllers, accessibility IDs, annotations, screenshot filenames |
-| `export.md` | Human-readable markdown summary (printed to Xcode console on each export) |
+| `export.json` | Structured metadata — class names, property names, frames, view controllers, visual properties, annotations |
+| `export.md` | Human-readable markdown summary |
 | `{id}.jpg` | Per-element JPEG screenshot, cropped to element bounds + 20pt padding |
+
+**Area export** (drag-select + annotate):
+
+| File | Contents |
+|---|---|
+| `export.json` | Structured metadata for all views in the selected area, plus your note and area bounds |
+| `export.md` | Human-readable markdown summary |
+| `fullscreen.jpg` | Full-screen screenshot for context |
+| `area.jpg` | Cropped screenshot of the selected area |
 
 ## Auto-Instrumentation
 
@@ -83,17 +95,26 @@ Default is `false`. Enabling this can interfere with custom navigation or modal 
 
 ## Using with Claude Code
 
-Agentation is designed to feed context directly into AI coding agents like Claude Code:
+### Workflow
 
-1. Activate Agentation in your running app
-2. Select the elements you want changed
-3. Annotate each element with your intent — e.g. "make this button blue", "this label should show the username"
-4. Saving the annotation auto-exports — the markdown summary and export directory path are printed to the Xcode console
-5. Point Claude Code at the export directory path shown in the console (e.g. read the `export.md` file directly)
+1. Activate Agentation in the simulator (shake or call `Agentation.activate()`)
+2. Select the UI you want to change — tap a single element or drag-select an area
+3. Annotate with your intent (e.g. "make this button blue", "move this 8pt down", "hide when logged out")
+4. Save — the export path prints to the Xcode console
+5. In Claude Code, type `/check-agentation` to read the latest export
 
-Claude Code receives structured metadata (class names, property names, view controller, accessibility IDs, frames) plus your annotations — enough to locate and modify the right code.
+### Installing the Skill
 
-**Tip:** Annotate with *intent* ("move this 8pt down", "hide when logged out") rather than just describing what's there. The metadata already captures the current state.
+Copy the skill file from this repo into your project's `.claude/commands/` directory:
+
+```bash
+mkdir -p .claude/commands
+cp <path-to-agentation-repo>/skill/check-agentation.md .claude/commands/check-agentation.md
+```
+
+This registers `/check-agentation` as a slash command in Claude Code. When invoked, Claude reads the latest export (JSON, screenshots, source files) and is ready to make targeted code changes.
+
+**Tip:** Annotate with *intent* rather than describing what's there — the metadata already captures the current state.
 
 ## Testing / Verification
 
