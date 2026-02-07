@@ -20,7 +20,14 @@ final class OverlayViewController: UIViewController {
 		case noting
 	}
 
+	private enum SelectionInteraction {
+		case none
+		case resizing(fixedCorner: CGPoint)
+		case moving(startPoint: CGPoint, startRect: CGRect)
+	}
+
 	private var overlayState: OverlayState = .idle
+	private var selectionInteraction: SelectionInteraction = .none
 	private var selectedAreaRect: CGRect?
 	private var capturedFullScreenData: Data?
 	private var capturedAreaData: Data?
@@ -101,6 +108,17 @@ final class OverlayViewController: UIViewController {
 	// MARK: - Drag Selection
 
 	@objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+		switch overlayState {
+		case .idle:
+			handleDrawingPan(gesture)
+		case .areaSelected:
+			handleSelectionPan(gesture)
+		case .noting:
+			break
+		}
+	}
+
+	private func handleDrawingPan(_ gesture: UIPanGestureRecognizer) {
 		let currentPoint = gesture.location(in: view)
 
 		switch gesture.state {
@@ -145,6 +163,59 @@ final class OverlayViewController: UIViewController {
 			selectionRectangleView?.removeFromSuperview()
 			selectionRectangleView = nil
 			dragStartPoint = nil
+
+		default:
+			break
+		}
+	}
+
+	private func handleSelectionPan(_ gesture: UIPanGestureRecognizer) {
+		let currentPoint = gesture.location(in: view)
+
+		switch gesture.state {
+		case .began:
+			guard let rectView = selectionRectangleView else { return }
+			let localPoint = view.convert(currentPoint, to: rectView)
+			let hitArea = rectView.hitArea(for: localPoint)
+			switch hitArea {
+			case .corner(let corner):
+				let rect = rectView.frame
+				let fixedCorner: CGPoint
+				switch corner {
+				case .topLeft:     fixedCorner = CGPoint(x: rect.maxX, y: rect.maxY)
+				case .topRight:    fixedCorner = CGPoint(x: rect.minX, y: rect.maxY)
+				case .bottomLeft:  fixedCorner = CGPoint(x: rect.maxX, y: rect.minY)
+				case .bottomRight: fixedCorner = CGPoint(x: rect.minX, y: rect.minY)
+				}
+				selectionInteraction = .resizing(fixedCorner: fixedCorner)
+			case .inside:
+				selectionInteraction = .moving(startPoint: currentPoint, startRect: rectView.frame)
+			case .none:
+				selectionInteraction = .none
+			}
+
+		case .changed:
+			switch selectionInteraction {
+			case .resizing(let fixedCorner):
+				let width = max(abs(currentPoint.x - fixedCorner.x), 10)
+				let height = max(abs(currentPoint.y - fixedCorner.y), 10)
+				let x = currentPoint.x < fixedCorner.x ? fixedCorner.x - width : fixedCorner.x
+				let y = currentPoint.y < fixedCorner.y ? fixedCorner.y - height : fixedCorner.y
+				let newRect = CGRect(x: x, y: y, width: width, height: height)
+				selectionRectangleView?.frame = newRect
+				selectedAreaRect = newRect
+			case .moving(let startPoint, let startRect):
+				let dx = currentPoint.x - startPoint.x
+				let dy = currentPoint.y - startPoint.y
+				let newRect = startRect.offsetBy(dx: dx, dy: dy)
+				selectionRectangleView?.frame = newRect
+				selectedAreaRect = newRect
+			case .none:
+				break
+			}
+
+		case .ended, .cancelled, .failed:
+			selectionInteraction = .none
 
 		default:
 			break
@@ -264,9 +335,10 @@ final class OverlayViewController: UIViewController {
 
 	private func enterAreaSelectedState() {
 		overlayState = .areaSelected
-		panGesture?.isEnabled = false
+		panGesture?.isEnabled = true
 		tapGesture?.isEnabled = false
 		clearHighlights()
+		selectionRectangleView?.handlesVisible = true
 		toolbarView.setMode(.confirmArea)
 		toolbarView.isHidden = false
 	}
@@ -313,6 +385,8 @@ final class OverlayViewController: UIViewController {
 	}
 
 	private func redoAreaSelection() {
+		selectionInteraction = .none
+		selectionRectangleView?.handlesVisible = false
 		selectionRectangleView?.removeFromSuperview()
 		selectionRectangleView = nil
 		selectedAreaRect = nil
