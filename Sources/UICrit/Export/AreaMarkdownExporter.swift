@@ -3,7 +3,7 @@ import Foundation
 enum AreaMarkdownExporter {
 	static func export(payload: AreaExportPayload) -> String {
 		var lines: [String] = []
-		lines.append("# Agentation Area Export")
+		lines.append("# UICrit Area Export")
 		lines.append("")
 		lines.append("**Timestamp:** \(payload.timestamp)")
 		lines.append("")

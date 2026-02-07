@@ -3,20 +3,20 @@
 import PackageDescription
 
 let package = Package(
-	name: "Agentation",
+	name: "UICrit",
 	platforms: [
 		.iOS(.v16)
 	],
 	products: [
 		.library(
-			name: "Agentation",
-			targets: ["Agentation"]
+			name: "UICrit",
+			targets: ["UICrit"]
 		)
 	],
 	targets: [
 		.target(
-			name: "Agentation",
-			path: "Sources/Agentation"
+			name: "UICrit",
+			path: "Sources/UICrit"
 		)
 	]
 )

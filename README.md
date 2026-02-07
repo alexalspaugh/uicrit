@@ -1,4 +1,4 @@
-# Agentation
+# UICrit
 
 Debug tool for UIKit apps. Tap or drag-to-select elements in a running app, annotate them with intent, and export structured context for AI coding agents.
 
@@ -14,7 +14,7 @@ Add via Swift Package Manager:
 
 1. **File → Add Package Dependencies**
 2. Paste the repo URL
-3. Add `Agentation` to your target
+3. Add `UICrit` to your target
 
 ## Setup
 
@@ -22,10 +22,10 @@ In your `AppDelegate` (or wherever you bootstrap):
 
 ```swift
 #if DEBUG
-import Agentation
+import UICrit
 
 if #available(iOS 26, *) {
-    Agentation.install(activationNotification: .deviceDidShake)
+    UICrit.install(activationNotification: .deviceDidShake)
 }
 #endif
 ```
@@ -46,9 +46,9 @@ extension UIWindow {
 You can also skip the notification and control activation directly:
 
 ```swift
-Agentation.activate()
-Agentation.deactivate()
-Agentation.toggle()
+UICrit.activate()
+UICrit.deactivate()
+UICrit.toggle()
 ```
 
 ## Usage
@@ -64,7 +64,7 @@ When activated:
 
 ## Export Output
 
-Exports write to `/tmp/Agentation/<timestamp>/` with a symlink at `/tmp/Agentation/latest/`.
+Exports write to `/tmp/UICrit/<timestamp>/` with a symlink at `/tmp/UICrit/latest/`.
 
 **Single-element export** (tap + annotate):
 
@@ -88,7 +88,7 @@ Exports write to `/tmp/Agentation/<timestamp>/` with a symlink at `/tmp/Agentati
 Opt-in flag that swizzles `UIView.didMoveToSuperview` to track view hierarchy changes at runtime:
 
 ```swift
-Agentation.install(activationNotification: .deviceDidShake, autoInstrument: true)
+UICrit.install(activationNotification: .deviceDidShake, autoInstrument: true)
 ```
 
 Default is `false`. Enabling this can interfere with custom navigation or modal transitions — use with caution.
@@ -97,11 +97,11 @@ Default is `false`. Enabling this can interfere with custom navigation or modal 
 
 ### Workflow
 
-1. Activate Agentation in the simulator (shake or call `Agentation.activate()`)
+1. Activate UICrit in the simulator (shake or call `UICrit.activate()`)
 2. Select the UI you want to change — tap a single element or drag-select an area
 3. Annotate with your intent (e.g. "make this button blue", "move this 8pt down", "hide when logged out")
 4. Save — the export path prints to the Xcode console
-5. In Claude Code, type `/check-agentation` to read the latest export
+5. In Claude Code, type `/check-uicrit` to read the latest export
 
 ### Installing the Skill
 
@@ -109,10 +109,10 @@ Copy the skill file from this repo into your project's `.claude/commands/` direc
 
 ```bash
 mkdir -p .claude/commands
-cp <path-to-agentation-repo>/skill/check-agentation.md .claude/commands/check-agentation.md
+cp <path-to-uicrit-repo>/skill/check-uicrit.md .claude/commands/check-uicrit.md
 ```
 
-This registers `/check-agentation` as a slash command in Claude Code. When invoked, Claude reads the latest export (JSON, screenshots, source files) and is ready to make targeted code changes.
+This registers `/check-uicrit` as a slash command in Claude Code. When invoked, Claude reads the latest export (JSON, screenshots, source files) and is ready to make targeted code changes.
 
 **Tip:** Annotate with *intent* rather than describing what's there — the metadata already captures the current state.
 
@@ -121,12 +121,12 @@ This registers `/check-agentation` as a slash command in Claude Code. When invok
 Build the package:
 
 ```bash
-xcodebuild build -scheme "Agentation" -destination "platform=iOS Simulator,name=iPhone 16"
+xcodebuild build -scheme "UICrit" -destination "platform=iOS Simulator,name=iPhone 16"
 ```
 
 To verify end-to-end, integrate into a host app and run in the Simulator:
 
-1. Shake (or call `Agentation.activate()`) to trigger the overlay
+1. Shake (or call `UICrit.activate()`) to trigger the overlay
 2. Tap an element → confirm highlight and metadata label appear
 3. Drag to multi-select → confirm marquee rectangle and multiple highlights
 4. Annotate → confirm input bar appears, annotation saves, and console prints the markdown content + export directory path

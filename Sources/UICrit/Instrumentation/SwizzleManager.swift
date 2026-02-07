@@ -16,7 +16,7 @@ enum SwizzleManager {
 				let original = unsafeBitCast(imp, to: OriginalFunc.self)
 				original(view, #selector(UIView.didMoveToSuperview))
 			}
-			NotificationCenter.default.post(name: .agentationViewDidMoveToSuperview, object: view)
+			NotificationCenter.default.post(name: .uicritViewDidMoveToSuperview, object: view)
 		}
 
 		let swizzledIMP = imp_implementationWithBlock(swizzledBlock)
@@ -35,5 +35,5 @@ enum SwizzleManager {
 }
 
 extension Notification.Name {
-	static let agentationViewDidMoveToSuperview = Notification.Name("agentationViewDidMoveToSuperview")
+	static let uicritViewDidMoveToSuperview = Notification.Name("uicritViewDidMoveToSuperview")
 }

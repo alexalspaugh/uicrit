@@ -2,9 +2,9 @@ import UIKit
 
 @available(iOS 26, *)
 @MainActor
-public final class Agentation {
+public final class UICrit {
 
-	private static let shared = Agentation()
+	private static let shared = UICrit()
 
 	private var isInstalled = false
 	private var isActive = false

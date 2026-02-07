@@ -77,7 +77,7 @@ final class OverlayViewController: UIViewController {
 			self?.showAnnotationInput()
 		}
 		toolbarView.onDone = {
-			Agentation.deactivate()
+			UICrit.deactivate()
 		}
 		toolbarView.onConfirm = { [weak self] in
 			self?.confirmArea()
@@ -408,13 +408,13 @@ final class OverlayViewController: UIViewController {
 		Task { [weak self] in
 			guard let session = self?.session else { return }
 			if let result = await coordinator.export(session: session) {
-				print("[Agentation] ========================================")
-				print("[Agentation] Export Complete")
-				print("[Agentation] ========================================")
+				print("[UICrit] ========================================")
+				print("[UICrit] Export Complete")
+				print("[UICrit] ========================================")
 				print(result.markdownString)
-				print("[Agentation] ========================================")
-				print("[Agentation] Export directory: \(result.directoryURL.path)")
-				print("[Agentation] ========================================")
+				print("[UICrit] ========================================")
+				print("[UICrit] Export directory: \(result.directoryURL.path)")
+				print("[UICrit] ========================================")
 			}
 		}
 	}
@@ -422,7 +422,7 @@ final class OverlayViewController: UIViewController {
 	private func performAreaExport(note: String) {
 		annotationInputView.hide()
 
-		let baseDir = URL(fileURLWithPath: "/tmp/Agentation", isDirectory: true)
+		let baseDir = URL(fileURLWithPath: "/tmp/UICrit", isDirectory: true)
 		let dateFormatter = DateFormatter()
 		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss"
 		let timestampDir = baseDir.appendingPathComponent(dateFormatter.string(from: Date()), isDirectory: true)
@@ -485,14 +485,14 @@ final class OverlayViewController: UIViewController {
 			try jsonData.write(to: jsonURL)
 			let markdown = AreaMarkdownExporter.export(payload: payload)
 			try markdown.write(to: markdownURL, atomically: true, encoding: .utf8)
-			print("[Agentation] ========================================")
-			print("[Agentation] Area Export Complete")
-			print("[Agentation] Export directory: \(exportDir.path)")
-			print("[Agentation] ========================================")
+			print("[UICrit] ========================================")
+			print("[UICrit] Area Export Complete")
+			print("[UICrit] Export directory: \(exportDir.path)")
+			print("[UICrit] ========================================")
 		} catch {
-			print("[Agentation] Export failed: \(error)")
+			print("[UICrit] Export failed: \(error)")
 		}
 
-		Agentation.deactivate()
+		UICrit.deactivate()
 	}
 }

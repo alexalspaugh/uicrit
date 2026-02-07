@@ -3,7 +3,7 @@ import Foundation
 enum MarkdownExporter {
 	static func export(payload: ExportPayload) -> String {
 		var lines: [String] = []
-		lines.append("# Agentation Export")
+		lines.append("# UICrit Export")
 		lines.append("")
 		lines.append("**Timestamp:** \(payload.timestamp)")
 		lines.append("**Schema Version:** \(payload.schemaVersion)")

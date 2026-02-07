@@ -13,7 +13,7 @@ final class ExportCoordinator {
 	func export(session: Session) async -> ExportResult? {
 		let records = session.records
 
-		let baseDir = URL(fileURLWithPath: "/tmp/Agentation", isDirectory: true)
+		let baseDir = URL(fileURLWithPath: "/tmp/UICrit", isDirectory: true)
 		let formatter = DateFormatter()
 		formatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss"
 		let timestampDir = baseDir.appendingPathComponent(formatter.string(from: Date()), isDirectory: true)

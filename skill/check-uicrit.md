@@ -1,10 +1,10 @@
-Read and analyze the latest Agentation export — a UI snapshot from the iOS simulator with screenshots, view hierarchy, and visual properties. Use when the user says "check agentation", "check annotation", "read agentation", or references the Agentation tool.
+Read and analyze the latest UICrit export — a UI snapshot from the iOS simulator with screenshots, view hierarchy, and visual properties. Use when the user says "check uicrit", "check annotation", "read uicrit", or references the UICrit tool.
 
-# Agentation Export Reader
+# UICrit Export Reader
 
-## What is Agentation?
+## What is UICrit?
 
-Agentation is a debug overlay for UIKit apps. The developer selects an area of the screen in the simulator, optionally adds a note, and exports a structured snapshot. The export includes:
+UICrit is a debug overlay for UIKit apps. The developer selects an area of the screen in the simulator, optionally adds a note, and exports a structured snapshot. The export includes:
 
 - **Screenshots**: `fullscreen.jpg` (entire screen) and `area.jpg` (cropped to selection), or individual `{id}.jpg` files for single-element exports
 - **Structured data**: `export.json` with the view hierarchy, property names, visual properties, and owning view controllers for all views in the selected area
@@ -14,10 +14,10 @@ The purpose is to give you (Claude) precise context about a piece of UI so you c
 
 ## How to read the export
 
-1. Read `/tmp/Agentation/latest/export.json` first — this is the structured data
+1. Read `/tmp/UICrit/latest/export.json` first — this is the structured data
 2. **In a single parallel batch**, read all of the following at once:
-   - `/tmp/Agentation/latest/area.jpg` (if area export) or the screenshot files listed in `screenshot_filename` fields (if single-element export)
-   - `/tmp/Agentation/latest/fullscreen.jpg` (full screen context, area exports only)
+   - `/tmp/UICrit/latest/area.jpg` (if area export) or the screenshot files listed in `screenshot_filename` fields (if single-element export)
+   - `/tmp/UICrit/latest/fullscreen.jpg` (full screen context, area exports only)
    - The source files identified in `export.json` — use `cell_class_name` or `view_controller_name` from the elements to determine which `.swift` files to read. This ensures you can edit immediately without an extra round trip.
 3. If the user included a note, it will be in the `note` field of `export.json` — this is their request or observation
 
