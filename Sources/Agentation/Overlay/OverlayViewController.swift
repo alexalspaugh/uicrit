@@ -388,7 +388,7 @@ final class OverlayViewController: UIViewController {
 		}
 
 		let payload = AreaExportPayload(
-			schemaVersion: "1.1.0",
+			schemaVersion: "1.2.0",
 			timestamp: formatter.string(from: Date()),
 			note: note,
 			selectedArea: ExportFrame(

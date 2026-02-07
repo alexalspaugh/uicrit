@@ -59,7 +59,7 @@ final class ExportCoordinator {
 
 		let isoFormatter = ISO8601DateFormatter()
 		let payload = ExportPayload(
-			schemaVersion: "1.1.0",
+			schemaVersion: "1.2.0",
 			timestamp: isoFormatter.string(from: Date()),
 			elements: elements
 		)

@@ -9,6 +9,8 @@ struct VisualProperties {
 	let alpha: CGFloat?
 	let isHidden: Bool?
 	let imageName: String?
+	let numberOfLines: Int?
+	let contentMode: String?
 }
 
 extension UIView {
@@ -17,11 +19,14 @@ extension UIView {
 		var fontSize: CGFloat? = nil
 		var textColor: String? = nil
 		var imageName: String? = nil
+		var numberOfLines: Int? = nil
+		var contentModeString: String? = nil
 
 		if let label = self as? UILabel {
 			text = label.text
 			fontSize = label.font?.pointSize
 			textColor = label.textColor.agHexString
+			numberOfLines = label.numberOfLines
 		} else if let textField = self as? UITextField {
 			text = textField.text
 			fontSize = textField.font?.pointSize
@@ -36,6 +41,7 @@ extension UIView {
 			textColor = button.currentTitleColor.agHexString
 		} else if let imageView = self as? UIImageView {
 			imageName = imageView.image?.accessibilityIdentifier
+			contentModeString = imageView.contentMode.agName
 		}
 
 		return VisualProperties(
@@ -46,8 +52,31 @@ extension UIView {
 			cornerRadius: layer.cornerRadius,
 			alpha: self.alpha,
 			isHidden: isHidden,
-			imageName: imageName
+			imageName: imageName,
+			numberOfLines: numberOfLines,
+			contentMode: contentModeString
 		)
+	}
+}
+
+extension UIView.ContentMode {
+	var agName: String {
+		switch self {
+		case .scaleToFill: return "scaleToFill"
+		case .scaleAspectFit: return "scaleAspectFit"
+		case .scaleAspectFill: return "scaleAspectFill"
+		case .center: return "center"
+		case .top: return "top"
+		case .bottom: return "bottom"
+		case .left: return "left"
+		case .right: return "right"
+		case .topLeft: return "topLeft"
+		case .topRight: return "topRight"
+		case .bottomLeft: return "bottomLeft"
+		case .bottomRight: return "bottomRight"
+		case .redraw: return "redraw"
+		@unknown default: return "unknown"
+		}
 	}
 }
 

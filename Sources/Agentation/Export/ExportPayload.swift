@@ -47,6 +47,8 @@ struct ExportVisualProperties: Codable {
 	let alpha: CGFloat?
 	let isHidden: Bool?
 	let imageName: String?
+	let numberOfLines: Int?
+	let contentMode: String?
 
 	enum CodingKeys: String, CodingKey {
 		case text
@@ -57,6 +59,8 @@ struct ExportVisualProperties: Codable {
 		case alpha
 		case isHidden = "is_hidden"
 		case imageName = "image_name"
+		case numberOfLines = "number_of_lines"
+		case contentMode = "content_mode"
 	}
 
 	init(from visualProperties: VisualProperties?) {
@@ -69,6 +73,8 @@ struct ExportVisualProperties: Codable {
 			alpha = nil
 			isHidden = nil
 			imageName = nil
+			numberOfLines = nil
+			contentMode = nil
 			return
 		}
 		text = vp.text
@@ -79,6 +85,8 @@ struct ExportVisualProperties: Codable {
 		alpha = vp.alpha
 		isHidden = vp.isHidden
 		imageName = vp.imageName
+		numberOfLines = vp.numberOfLines
+		contentMode = vp.contentMode
 	}
 }
 

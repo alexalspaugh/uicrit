@@ -56,6 +56,23 @@ enum MetadataCapture {
 			}
 			current = ancestor.superview
 		}
+		// TIER 4: Walk up ancestors and resolve the first one that has a property name
+		var ancestor: UIView? = view.superview
+		while let current = ancestor {
+			if let superview = current.superview,
+			   let name = propertyName(of: current, in: superview) {
+				return name
+			}
+			if let vc = current.agOwningViewController {
+				let mirror = Mirror(reflecting: vc)
+				for case (let label?, let value) in mirror.children {
+					if let vcView = value as? UIView, vcView === current {
+						return label
+					}
+				}
+			}
+			ancestor = current.superview
+		}
 		return nil
 	}
 }
