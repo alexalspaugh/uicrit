@@ -54,6 +54,8 @@ final class SelectionRectangleView: UIView {
 
 	override func layoutSubviews() {
 		super.layoutSubviews()
+		CATransaction.begin()
+		CATransaction.setDisableActions(true)
 		borderLayer.path = UIBezierPath(roundedRect: bounds, cornerRadius: 2).cgPath
 		borderLayer.frame = bounds
 
@@ -76,6 +78,7 @@ final class SelectionRectangleView: UIView {
 				height: handleDiameter
 			)
 		}
+		CATransaction.commit()
 	}
 
 	func hitArea(for point: CGPoint) -> HitArea {

@@ -6,13 +6,10 @@ final class OverlayViewController: UIViewController {
 	private let session: Session
 	private let toolbarView = ToolbarView()
 	private let annotationInputView = AnnotationInputView()
-	private var highlightViews: [HighlightView] = []
-	private var selectedViews: [UIView] = []
 	private var selectionRectangleView: SelectionRectangleView?
 	private var dragStartPoint: CGPoint?
 	private var annotationBottomConstraint: NSLayoutConstraint?
 	private var panGesture: UIPanGestureRecognizer?
-	private var tapGesture: UITapGestureRecognizer?
 
 	private enum OverlayState {
 		case idle
@@ -47,14 +44,10 @@ final class OverlayViewController: UIViewController {
 		super.viewDidLoad()
 		view.backgroundColor = .clear
 
-		let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
 		let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
 		panGesture.minimumNumberOfTouches = 1
 		panGesture.maximumNumberOfTouches = 1
-		tapGesture.require(toFail: panGesture)
-		view.addGestureRecognizer(tapGesture)
 		view.addGestureRecognizer(panGesture)
-		self.tapGesture = tapGesture
 		self.panGesture = panGesture
 
 		view.addSubview(toolbarView)
@@ -64,7 +57,7 @@ final class OverlayViewController: UIViewController {
 		])
 
 		view.addSubview(annotationInputView)
-		let annotationBottom = annotationInputView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+		let annotationBottom = annotationInputView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8)
 		annotationBottomConstraint = annotationBottom
 		annotationInputView.setBottomConstraint(annotationBottom)
 		NSLayoutConstraint.activate([
@@ -73,9 +66,6 @@ final class OverlayViewController: UIViewController {
 			annotationBottom,
 		])
 
-		toolbarView.onAnnotate = { [weak self] in
-			self?.showAnnotationInput()
-		}
 		toolbarView.onDone = {
 			UICrit.deactivate()
 		}
@@ -89,20 +79,6 @@ final class OverlayViewController: UIViewController {
 		annotationInputView.onSave = { [weak self] text in
 			self?.saveAnnotation(text)
 		}
-	}
-
-	// MARK: - Tap Selection
-
-	@objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-		let point = gesture.location(in: view)
-		guard let appView = findAppView(at: point) else { return }
-
-		let record = MetadataCapture.captureMetadata(for: appView)
-		session.addRecord(record)
-
-		clearHighlights()
-		selectedViews = [appView]
-		addHighlight(for: appView, record: record)
 	}
 
 	// MARK: - Drag Selection
@@ -222,49 +198,7 @@ final class OverlayViewController: UIViewController {
 		}
 	}
 
-	// MARK: - Highlights
-
-	private func clearHighlights() {
-		for highlightView in highlightViews {
-			highlightView.removeFromSuperview()
-		}
-		highlightViews.removeAll()
-		selectedViews.removeAll()
-	}
-
-	private func addHighlight(for appView: UIView, record: ElementRecord) {
-		guard let frameInWindow = appView.agFrameInWindow else { return }
-		let highlightView = HighlightView()
-		highlightView.frame = frameInWindow
-		highlightView.configure(
-			className: record.className,
-			accessibilityID: record.accessibilityIdentifier,
-			propertyName: record.propertyName
-		)
-		view.insertSubview(highlightView, belowSubview: toolbarView)
-		highlightView.updateLabelPosition(containerBounds: view.bounds)
-		highlightView.animateIn()
-		highlightViews.append(highlightView)
-	}
-
 	// MARK: - View Finding
-
-	private func findAppView(at point: CGPoint) -> UIView? {
-		let windowPoint = view.convert(point, to: nil)
-		let appWindows = UIApplication.shared.connectedScenes
-			.compactMap { $0 as? UIWindowScene }
-			.flatMap(\.windows)
-			.filter { !($0 is OverlayWindow) }
-			.sorted { $0.windowLevel.rawValue > $1.windowLevel.rawValue }
-
-		for window in appWindows {
-			let windowLocalPoint = window.convert(windowPoint, from: nil)
-			if let hit = window.hitTest(windowLocalPoint, with: nil) {
-				return hit
-			}
-		}
-		return nil
-	}
 
 	private func findAppViews(in windowRect: CGRect) -> [UIView] {
 		let appWindows = UIApplication.shared.connectedScenes
@@ -313,23 +247,8 @@ final class OverlayViewController: UIViewController {
 
 	// MARK: - Annotation
 
-	private func showAnnotationInput() {
-		guard !selectedViews.isEmpty else { return }
-		toolbarView.isHidden = true
-		annotationInputView.show()
-	}
-
 	private func saveAnnotation(_ text: String) {
-		if overlayState == .noting {
-			performAreaExport(note: text)
-			return
-		}
-		for selectedView in selectedViews {
-			session.annotate(view: selectedView, text: text)
-		}
-		annotationInputView.hide()
-		toolbarView.isHidden = false
-		performExport()
+		performAreaExport(note: text)
 	}
 
 	// MARK: - Area Selection
@@ -337,10 +256,8 @@ final class OverlayViewController: UIViewController {
 	private func enterAreaSelectedState() {
 		overlayState = .areaSelected
 		panGesture?.isEnabled = true
-		tapGesture?.isEnabled = false
-		clearHighlights()
 		selectionRectangleView?.handlesVisible = true
-		toolbarView.setMode(.confirmArea)
+		toolbarView.setMode(.areaSelected)
 		toolbarView.isHidden = false
 	}
 
@@ -397,27 +314,10 @@ final class OverlayViewController: UIViewController {
 
 		overlayState = .idle
 		panGesture?.isEnabled = true
-		tapGesture?.isEnabled = true
-		toolbarView.setMode(.defaultMode)
+		toolbarView.setMode(.idle)
 	}
 
 	// MARK: - Export
-
-	private func performExport() {
-		let coordinator = ExportCoordinator()
-		Task { [weak self] in
-			guard let session = self?.session else { return }
-			if let result = await coordinator.export(session: session) {
-				print("[UICrit] ========================================")
-				print("[UICrit] Export Complete")
-				print("[UICrit] ========================================")
-				print(result.markdownString)
-				print("[UICrit] ========================================")
-				print("[UICrit] Export directory: \(result.directoryURL.path)")
-				print("[UICrit] ========================================")
-			}
-		}
-	}
 
 	private func performAreaExport(note: String) {
 		annotationInputView.hide()
