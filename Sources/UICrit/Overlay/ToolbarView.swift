@@ -3,55 +3,66 @@ import UIKit
 @available(iOS 26, *)
 @MainActor
 final class ToolbarView: UIView {
-	var onAnnotate: (() -> Void)?
 	var onDone: (() -> Void)?
 	var onConfirm: (() -> Void)?
 	var onRedo: (() -> Void)?
 
 	enum Mode {
-		case defaultMode
-		case confirmArea
+		case idle
+		case areaSelected
 	}
 
-	private let glassEffectView: UIVisualEffectView = {
-		let effectView = UIVisualEffectView(effect: UIGlassEffect())
-		effectView.clipsToBounds = true
-		effectView.layer.cornerRadius = 24
+	private let containerEffectView: UIVisualEffectView = {
+		let container = UIGlassContainerEffect()
+		let effectView = UIVisualEffectView(effect: container)
 		effectView.translatesAutoresizingMaskIntoConstraints = false
 		return effectView
 	}()
 
-	private let stackView: UIStackView = {
+	private let instructionLabel: UILabel = {
+		let label = UILabel()
+		label.text = "Drag to select"
+		label.font = .systemFont(ofSize: 13, weight: .medium)
+		label.textColor = .secondaryLabel
+		label.textAlignment = .center
+		label.translatesAutoresizingMaskIntoConstraints = false
+		return label
+	}()
+
+	private lazy var dismissButton: UIView = {
+		makeCircularGlassButton(systemName: "xmark", tinted: false) { [weak self] in
+			self?.onDone?()
+		}
+	}()
+
+	private lazy var redoButton: UIView = {
+		makeCircularGlassButton(systemName: "xmark", tinted: false) { [weak self] in
+			self?.onRedo?()
+		}
+	}()
+
+	private lazy var confirmButton: UIView = {
+		makeCircularGlassButton(systemName: "checkmark", tinted: true) { [weak self] in
+			self?.onConfirm?()
+		}
+	}()
+
+	private let buttonContainer: UIStackView = {
 		let stack = UIStackView()
 		stack.axis = .horizontal
-		stack.distribution = .equalSpacing
 		stack.spacing = 16
+		stack.alignment = .center
 		stack.translatesAutoresizingMaskIntoConstraints = false
 		return stack
 	}()
 
-	private lazy var annotateButton: UIButton = {
-		let button = ToolbarView.makeIconButton(systemName: "pencil.tip.crop.circle")
-		button.addAction(UIAction { [weak self] _ in self?.onAnnotate?() }, for: .touchUpInside)
-		return button
-	}()
-
-	private lazy var doneButton: UIButton = {
-		let button = ToolbarView.makeIconButton(systemName: "xmark.circle.fill")
-		button.addAction(UIAction { [weak self] _ in self?.onDone?() }, for: .touchUpInside)
-		return button
-	}()
-
-	private lazy var confirmButton: UIButton = {
-		let button = ToolbarView.makeIconButton(systemName: "checkmark.circle.fill")
-		button.addAction(UIAction { [weak self] _ in self?.onConfirm?() }, for: .touchUpInside)
-		return button
-	}()
-
-	private lazy var redoButton: UIButton = {
-		let button = ToolbarView.makeIconButton(systemName: "arrow.counterclockwise.circle")
-		button.addAction(UIAction { [weak self] _ in self?.onRedo?() }, for: .touchUpInside)
-		return button
+	private let outerStack: UIStackView = {
+		let stack = UIStackView()
+		stack.axis = .vertical
+		stack.spacing = 12
+		stack.alignment = .center
+		stack.translatesAutoresizingMaskIntoConstraints = false
+		return stack
 	}()
 
 	override init(frame: CGRect) {
@@ -59,23 +70,23 @@ final class ToolbarView: UIView {
 		backgroundColor = .clear
 		translatesAutoresizingMaskIntoConstraints = false
 
-		addSubview(glassEffectView)
-		glassEffectView.contentView.addSubview(stackView)
+		addSubview(containerEffectView)
+		containerEffectView.contentView.addSubview(outerStack)
+		outerStack.addArrangedSubview(instructionLabel)
+		outerStack.addArrangedSubview(buttonContainer)
 
-		stackView.addArrangedSubview(annotateButton)
-		stackView.addArrangedSubview(doneButton)
+		buttonContainer.addArrangedSubview(dismissButton)
 
 		NSLayoutConstraint.activate([
-			glassEffectView.topAnchor.constraint(equalTo: topAnchor),
-			glassEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
-			glassEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
-			glassEffectView.bottomAnchor.constraint(equalTo: bottomAnchor),
+			containerEffectView.topAnchor.constraint(equalTo: topAnchor),
+			containerEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
+			containerEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
+			containerEffectView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-			stackView.topAnchor.constraint(equalTo: glassEffectView.contentView.topAnchor, constant: 6),
-			stackView.leadingAnchor.constraint(equalTo: glassEffectView.contentView.leadingAnchor, constant: 20),
-			stackView.trailingAnchor.constraint(equalTo: glassEffectView.contentView.trailingAnchor, constant: -20),
-			stackView.bottomAnchor.constraint(equalTo: glassEffectView.contentView.bottomAnchor, constant: -6),
-			stackView.heightAnchor.constraint(equalToConstant: 36),
+			outerStack.topAnchor.constraint(equalTo: containerEffectView.contentView.topAnchor, constant: 12),
+			outerStack.leadingAnchor.constraint(equalTo: containerEffectView.contentView.leadingAnchor, constant: 12),
+			outerStack.trailingAnchor.constraint(equalTo: containerEffectView.contentView.trailingAnchor, constant: -12),
+			outerStack.bottomAnchor.constraint(equalTo: containerEffectView.contentView.bottomAnchor, constant: -12),
 		])
 	}
 
@@ -85,24 +96,84 @@ final class ToolbarView: UIView {
 	}
 
 	func setMode(_ mode: Mode) {
-		stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+		buttonContainer.arrangedSubviews.forEach { $0.removeFromSuperview() }
 		switch mode {
-		case .defaultMode:
-			stackView.addArrangedSubview(annotateButton)
-			stackView.addArrangedSubview(doneButton)
-		case .confirmArea:
-			stackView.addArrangedSubview(redoButton)
-			stackView.addArrangedSubview(confirmButton)
+		case .idle:
+			instructionLabel.isHidden = false
+			buttonContainer.addArrangedSubview(dismissButton)
+			UIView.animate(withDuration: 0.4, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0, options: []) { [weak self] in
+				self?.layoutIfNeeded()
+			}
+		case .areaSelected:
+			instructionLabel.isHidden = true
+			UIView.performWithoutAnimation {
+				buttonContainer.addArrangedSubview(redoButton)
+				buttonContainer.addArrangedSubview(confirmButton)
+				buttonContainer.layoutIfNeeded()
+			}
+			redoButton.transform = CGAffineTransform(translationX: 36, y: 0)
+			confirmButton.transform = CGAffineTransform(translationX: -36, y: 0)
+			UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.3, options: []) { [weak self] in
+				self?.redoButton.transform = .identity
+				self?.confirmButton.transform = .identity
+				self?.buttonContainer.layoutIfNeeded()
+			}
 		}
 	}
 
-	private static func makeIconButton(systemName: String) -> UIButton {
-		var config = UIButton.Configuration.plain()
-		let symbolConfig = UIImage.SymbolConfiguration(pointSize: 17, weight: .medium)
-		config.image = UIImage(systemName: systemName, withConfiguration: symbolConfig)
-		config.baseForegroundColor = .label
-		let button = UIButton(configuration: config)
+	private func makeCircularGlassButton(
+		systemName: String,
+		tinted: Bool,
+		action: @escaping () -> Void
+	) -> UIView {
+		let size: CGFloat = 56
+
+		let wrapper = UIView()
+		wrapper.translatesAutoresizingMaskIntoConstraints = false
+
+		let glassEffect = UIGlassEffect()
+		glassEffect.isInteractive = true
+		if tinted {
+			glassEffect.tintColor = .systemBlue
+		}
+
+		let effectView = UIVisualEffectView(effect: glassEffect)
+		effectView.clipsToBounds = true
+		effectView.cornerConfiguration = .corners(radius: .fixed(size / 2))
+		effectView.translatesAutoresizingMaskIntoConstraints = false
+		wrapper.addSubview(effectView)
+
+		let symbolConfig = UIImage.SymbolConfiguration(pointSize: 17, weight: .semibold)
+		let imageView = UIImageView(image: UIImage(systemName: systemName, withConfiguration: symbolConfig))
+		imageView.tintColor = tinted ? .white : .label
+		imageView.contentMode = .center
+		imageView.translatesAutoresizingMaskIntoConstraints = false
+		effectView.contentView.addSubview(imageView)
+
+		let button = UIButton()
+		button.backgroundColor = .clear
 		button.translatesAutoresizingMaskIntoConstraints = false
-		return button
+		button.addAction(UIAction { _ in action() }, for: .touchUpInside)
+		wrapper.addSubview(button)
+
+		NSLayoutConstraint.activate([
+			wrapper.widthAnchor.constraint(equalToConstant: size),
+			wrapper.heightAnchor.constraint(equalToConstant: size),
+
+			effectView.topAnchor.constraint(equalTo: wrapper.topAnchor),
+			effectView.leadingAnchor.constraint(equalTo: wrapper.leadingAnchor),
+			effectView.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor),
+			effectView.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor),
+
+			imageView.centerXAnchor.constraint(equalTo: effectView.contentView.centerXAnchor),
+			imageView.centerYAnchor.constraint(equalTo: effectView.contentView.centerYAnchor),
+
+			button.topAnchor.constraint(equalTo: wrapper.topAnchor),
+			button.leadingAnchor.constraint(equalTo: wrapper.leadingAnchor),
+			button.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor),
+			button.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor),
+		])
+
+		return wrapper
 	}
 }

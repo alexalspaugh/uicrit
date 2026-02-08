@@ -5,8 +5,12 @@ import UIKit
 final class AnnotationInputView: UIView {
 	var onSave: ((String) -> Void)?
 
+	private let glassEffect = UIGlassEffect()
+
 	private let glassEffectView: UIVisualEffectView = {
-		let effectView = UIVisualEffectView(effect: UIGlassEffect())
+		let effectView = UIVisualEffectView(effect: nil)
+		effectView.clipsToBounds = true
+		effectView.cornerConfiguration = .corners(radius: .fixed(22))
 		effectView.translatesAutoresizingMaskIntoConstraints = false
 		return effectView
 	}()
@@ -14,8 +18,8 @@ final class AnnotationInputView: UIView {
 	private let textField: UITextField = {
 		let field = UITextField()
 		field.placeholder = "Add annotation..."
-		field.borderStyle = .roundedRect
-		field.font = .systemFont(ofSize: 14)
+		field.borderStyle = .none
+		field.font = .systemFont(ofSize: 16)
 		field.returnKeyType = .done
 		field.translatesAutoresizingMaskIntoConstraints = false
 		return field
@@ -42,8 +46,8 @@ final class AnnotationInputView: UIView {
 		addSubview(glassEffectView)
 		NSLayoutConstraint.activate([
 			glassEffectView.topAnchor.constraint(equalTo: topAnchor),
-			glassEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
-			glassEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
+			glassEffectView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+			glassEffectView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
 			glassEffectView.bottomAnchor.constraint(equalTo: bottomAnchor),
 		])
 
@@ -54,12 +58,12 @@ final class AnnotationInputView: UIView {
 		glassEffectView.contentView.addSubview(stack)
 
 		NSLayoutConstraint.activate([
-			stack.topAnchor.constraint(equalTo: glassEffectView.contentView.topAnchor, constant: 8),
+			stack.topAnchor.constraint(equalTo: glassEffectView.contentView.topAnchor, constant: 6),
 			stack.leadingAnchor.constraint(equalTo: glassEffectView.contentView.leadingAnchor, constant: 16),
 			stack.trailingAnchor.constraint(equalTo: glassEffectView.contentView.trailingAnchor, constant: -16),
-			stack.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -8),
-			stack.heightAnchor.constraint(equalToConstant: 44),
-			saveButton.widthAnchor.constraint(equalToConstant: 44),
+			stack.bottomAnchor.constraint(equalTo: glassEffectView.contentView.bottomAnchor, constant: -6),
+			stack.heightAnchor.constraint(equalToConstant: 36),
+			saveButton.widthAnchor.constraint(equalToConstant: 36),
 		])
 
 		saveButton.addAction(UIAction { [weak self] _ in self?.handleSave() }, for: .touchUpInside)
@@ -77,12 +81,21 @@ final class AnnotationInputView: UIView {
 	func show() {
 		textField.text = nil
 		isHidden = false
+		glassEffectView.effect = nil
+		UIView.animate(withDuration: 0.4, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0, options: []) { [weak self] in
+			guard let self else { return }
+			self.glassEffectView.effect = self.glassEffect
+		}
 		textField.becomeFirstResponder()
 	}
 
 	func hide() {
 		textField.resignFirstResponder()
-		isHidden = true
+		UIView.animate(withDuration: 0.3, animations: { [weak self] in
+			self?.glassEffectView.effect = nil
+		}) { [weak self] _ in
+			self?.isHidden = true
+		}
 	}
 
 	func setBottomConstraint(_ constraint: NSLayoutConstraint) {
@@ -99,7 +112,7 @@ final class AnnotationInputView: UIView {
 		guard let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
 			let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval
 		else { return }
-		bottomConstraint?.constant = -keyboardFrame.height
+		bottomConstraint?.constant = -keyboardFrame.height - 8
 		UIView.animate(withDuration: duration) { [weak self] in
 			self?.superview?.layoutIfNeeded()
 		}
