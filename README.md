@@ -1,6 +1,6 @@
 # UICrit
 
-Debug tool for UIKit apps. Select an area of your running app, annotate what you want changed, and export structured context for AI coding agents.
+A design tool for UIKit apps. Select an area of your running app, annotate what you want changed, and export structured context for AI coding agents.
 
 ## Requirements
 
