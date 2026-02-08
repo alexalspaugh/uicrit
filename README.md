@@ -1,6 +1,6 @@
 # UICrit
 
-Debug tool for UIKit apps. Tap or drag-to-select elements in a running app, annotate them with intent, and export structured context for AI coding agents.
+Debug tool for UIKit apps. Select an area of your running app, annotate what you want changed, and export structured context for AI coding agents.
 
 ## Requirements
 
@@ -55,30 +55,18 @@ UICrit.toggle()
 
 When activated:
 
-1. A glass toolbar appears at the bottom with two buttons — **Annotate** and **Done**
-2. **Tap** any element to select it and see its metadata (class name, property name, view controller, accessibility ID, frame)
-3. **Drag** to draw a selection rectangle and capture multiple elements at once — reposition by dragging, resize with corner handles
-4. **Annotate** with a note describing what you want changed — saving exports metadata, screenshots, and a markdown summary
-5. The export directory path prints to the Xcode console
-6. **Done** dismisses the overlay
+1. Drag to select an area of the UI
+2. Adjust the selection if needed, then confirm
+3. Add an annotation describing what you want changed
+4. Export writes structured metadata, screenshots, and a markdown summary to `/tmp/UICrit/latest/` and prints the path to the Xcode console
 
 ## Export Output
 
 Exports write to `/tmp/UICrit/<timestamp>/` with a symlink at `/tmp/UICrit/latest/`.
 
-**Single-element export** (tap + annotate):
-
 | File | Contents |
 |---|---|
-| `export.json` | Structured metadata — class names, property names, frames, view controllers, visual properties, annotations |
-| `export.md` | Human-readable markdown summary |
-| `{id}.jpg` | Per-element JPEG screenshot, cropped to element bounds + 20pt padding |
-
-**Area export** (drag-select + annotate):
-
-| File | Contents |
-|---|---|
-| `export.json` | Structured metadata for all views in the selected area, plus your note and area bounds |
+| `export.json` | Structured metadata for all views in the selected area, plus your annotation and area bounds |
 | `export.md` | Human-readable markdown summary |
 | `fullscreen.jpg` | Full-screen screenshot for context |
 | `area.jpg` | Cropped screenshot of the selected area |
@@ -98,9 +86,9 @@ Default is `false`. Enabling this can interfere with custom navigation or modal 
 ### Workflow
 
 1. Activate UICrit in the simulator (shake or call `UICrit.activate()`)
-2. Select the UI you want to change — tap a single element or drag-select an area
+2. Drag to select the area you want to change
 3. Annotate with your intent (e.g. "make this button blue", "move this 8pt down", "hide when logged out")
-4. Save — the export path prints to the Xcode console
+4. Export — the path prints to the Xcode console
 5. In Claude Code, type `/check-uicrit` to read the latest export
 
 ### Installing the Skill
@@ -127,8 +115,6 @@ xcodebuild build -scheme "UICrit" -destination "platform=iOS Simulator,name=iPho
 To verify end-to-end, integrate into a host app and run in the Simulator:
 
 1. Shake (or call `UICrit.activate()`) to trigger the overlay
-2. Tap an element → confirm highlight and metadata label appear
-3. Drag to multi-select → confirm marquee rectangle and multiple highlights
-4. Annotate → confirm input bar appears, annotation saves, and console prints the markdown content + export directory path
-5. Verify `export.json`, `export.md`, and screenshots in the temp directory
-6. Done → overlay dismisses cleanly
+2. Drag to select an area → confirm selection rectangle appears
+3. Annotate → confirm input appears, annotation saves, and console prints the export directory path
+4. Verify `export.json`, `export.md`, and screenshots in the temp directory
