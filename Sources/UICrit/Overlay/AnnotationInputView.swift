@@ -60,7 +60,7 @@ final class AnnotationInputView: UIView {
 		NSLayoutConstraint.activate([
 			stack.topAnchor.constraint(equalTo: glassEffectView.contentView.topAnchor, constant: 6),
 			stack.leadingAnchor.constraint(equalTo: glassEffectView.contentView.leadingAnchor, constant: 16),
-			stack.trailingAnchor.constraint(equalTo: glassEffectView.contentView.trailingAnchor, constant: -16),
+			stack.trailingAnchor.constraint(equalTo: glassEffectView.contentView.trailingAnchor, constant: -6),
 			stack.bottomAnchor.constraint(equalTo: glassEffectView.contentView.bottomAnchor, constant: -6),
 			stack.heightAnchor.constraint(equalToConstant: 36),
 			saveButton.widthAnchor.constraint(equalToConstant: 36),
@@ -87,6 +87,18 @@ final class AnnotationInputView: UIView {
 			self.glassEffectView.effect = self.glassEffect
 		}
 		textField.becomeFirstResponder()
+		// Fallback: if keyboard doesn't show (hardware keyboard),
+		// position above safe area bottom
+		DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+			guard let self, let bottomConstraint = self.bottomConstraint else { return }
+			if bottomConstraint.constant > -50 {
+				let safeBottom = self.safeAreaInsets.bottom
+				bottomConstraint.constant = -safeBottom - 8
+				UIView.animate(withDuration: 0.25) {
+					self.superview?.layoutIfNeeded()
+				}
+			}
+		}
 	}
 
 	func hide() {
